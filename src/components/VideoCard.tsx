@@ -57,7 +57,7 @@ export default function VideoCard({
 }: VideoCardProps) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAggregate = from === 'search' && !!items?.length;
 
@@ -275,15 +275,16 @@ export default function VideoCard({
       {/* 海报容器 */}
       <div className='relative aspect-[2/3] overflow-hidden rounded-lg'>
         {/* 骨架屏 */}
-        {!isLoading && <ImagePlaceholder aspectRatio='aspect-[2/3]' />}
+        {isLoading && <ImagePlaceholder aspectRatio='aspect-[2/3]' />}
         {/* 图片 */}
         <Image
           src={processImageUrl(actualPoster)}
           alt={actualTitle}
           fill
-          className='object-cover'
+          className={`object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`}
           referrerPolicy='no-referrer'
-          onLoadingComplete={() => setIsLoading(true)}
+          onLoad={() => setIsLoading(false)}
+          onError={() => setIsLoading(false)}
         />
 
         {/* 悬浮遮罩 */}
