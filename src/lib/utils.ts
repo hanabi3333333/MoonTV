@@ -3,39 +3,55 @@
 import Hls from 'hls.js';
 
 /**
- * 获取图片代理 URL 设置
+ * 内置同源图片代理（Edge Function）。
+ * 豆瓣图床对无 Referer / 非豆瓣来源的请求直接返回 418，浏览器直连必然破图，
+ * 因此默认启用，不再依赖 NEXT_PUBLIC_IMAGE_PROXY 手动配置。
  */
-export function getImageProxyUrl(): string | null {
-  if (typeof window === 'undefined') return null;
+export const BUILTIN_IMAGE_PROXY = '/api/image-proxy?url=';
 
-  // 本地未开启图片代理，则不使用代理
+/**
+ * 获取图片代理 URL 设置。
+ * 优先级：浏览器本地设置 > window.RUNTIME_CONFIG.IMAGE_PROXY > 内置代理。
+ * SSR 阶段同样返回内置代理，保证首屏 HTML 与客户端 hydration 一致。
+ */
+export function getImageProxyUrl(): string {
+  if (typeof window === 'undefined') return BUILTIN_IMAGE_PROXY;
+
+  // 显式关闭时返回空串，交由调用方直连原图
   const enableImageProxy = localStorage.getItem('enableImageProxy');
-  if (enableImageProxy !== null) {
-    if (!JSON.parse(enableImageProxy) as boolean) {
-      return null;
-    }
+  if (enableImageProxy !== null && !JSON.parse(enableImageProxy)) {
+    return '';
   }
 
   const localImageProxy = localStorage.getItem('imageProxyUrl');
   if (localImageProxy != null) {
-    return localImageProxy.trim() ? localImageProxy.trim() : null;
+    return localImageProxy.trim() || BUILTIN_IMAGE_PROXY;
   }
 
-  // 如果未设置，则使用全局对象
   const serverImageProxy = (window as any).RUNTIME_CONFIG?.IMAGE_PROXY;
   return serverImageProxy && serverImageProxy.trim()
     ? serverImageProxy.trim()
-    : null;
+    : BUILTIN_IMAGE_PROXY;
 }
 
 /**
- * 处理图片 URL，如果设置了图片代理则使用代理
+ * 处理图片 URL。
+ * - 绝对 http(s) 图片默认走服务端代理，解决图床防盗链；
+ * - 相对路径 / data URI 保持原样，不做二次包装；
+ * - 仅在不走代理（用户显式关闭）时把 http 升级为 https，避免混合内容拦截；
+ *   走代理时保留原协议，因为服务端 fetch 不受浏览器混合内容限制。
  */
 export function processImageUrl(originalUrl: string): string {
   if (!originalUrl) return originalUrl;
+  if (!/^https?:\/\//i.test(originalUrl)) return originalUrl;
 
   const proxyUrl = getImageProxyUrl();
-  if (!proxyUrl) return originalUrl;
+  if (!proxyUrl) {
+    return originalUrl.startsWith('http://')
+      ? `https://${originalUrl.slice('http://'.length)}`
+      : originalUrl;
+  }
+  if (originalUrl.startsWith(proxyUrl)) return originalUrl;
 
   return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
 }
