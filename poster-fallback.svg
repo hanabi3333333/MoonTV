@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8edf2"/>
+      <stop offset="1" stop-color="#cdd6e0"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="450" fill="url(#g)"/>
+  <g fill="none" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="92" y="176" width="116" height="98" rx="10"/>
+    <circle cx="150" cy="225" r="26"/>
+    <path d="M112 176l-14-18h104l-14 18"/>
+  </g>
+  <text x="150" y="312" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#64748b">暂无海报</text>
+</svg>
